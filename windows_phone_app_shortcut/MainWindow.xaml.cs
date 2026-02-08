@@ -18,6 +18,8 @@ namespace windows_phone_app_shortcut
         public string DisplayName { get; set; }
         // new: optional URI string pointing to an icon file (prefixed with file:///)
         public string? IconPath { get; set; }
+        public string? CustomArgs { get; set; }
+        public bool RequiresAudioPrompt { get; set; }
     }
 
     public partial class MainWindow : Window
@@ -48,6 +50,11 @@ namespace windows_phone_app_shortcut
             var listBox = GetAppsList();
             listBox.Items.Clear();
             var apps = await GetInstalledApps();
+            var extraApps = GetExtraApps();
+            foreach (var extra in extraApps)
+            {
+                listBox.Items.Add(extra);
+            }
             foreach (var a in apps.OrderBy(x => x.DisplayName))
             {
                 listBox.Items.Add(a);
@@ -122,18 +129,74 @@ namespace windows_phone_app_shortcut
             });
         }
 
+        private List<AppInfo> GetExtraApps()
+        {
+            return new List<AppInfo>
+            {
+                new AppInfo
+                {
+                    PackageName = "audio-link",
+                    DisplayName = "Audio Link",
+                    CustomArgs = "--no-video --no-window --audio-source=playback",
+                    RequiresAudioPrompt = false
+                },
+                new AppInfo
+                {
+                    PackageName = "screenshare",
+                    DisplayName = "Screenshare",
+                    CustomArgs = string.Empty,
+                    RequiresAudioPrompt = true
+                },
+                new AppInfo
+                {
+                    PackageName = "camera-front",
+                    DisplayName = "Camera Front",
+                    CustomArgs = "--camera-facing=front",
+                    RequiresAudioPrompt = false
+                },
+                new AppInfo
+                {
+                    PackageName = "camera-back",
+                    DisplayName = "Camera Back",
+                    CustomArgs = "--camera-facing=back",
+                    RequiresAudioPrompt = false
+                }
+            };
+        }
+
         private async void AppsList_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             var listBox = GetAppsList();
             if (listBox.SelectedItem is AppInfo app)
             {
-                var res = MessageBox.Show($"Create shortcut for {app.PackageName}?\nYes = audio\nNo = no audio\nCancel = cancel", "Create Shortcut", MessageBoxButton.YesNoCancel);
-                if (res == MessageBoxResult.Cancel) return;
+                bool includeAudio = false;
+                bool promptAudio = app.RequiresAudioPrompt || string.IsNullOrWhiteSpace(app.CustomArgs);
+                if (promptAudio)
+                {
+                    var res = MessageBox.Show($"Create shortcut for {app.DisplayName}?\nYes = audio\nNo = no audio\nCancel = cancel", "Create Shortcut", MessageBoxButton.YesNoCancel);
+                    if (res == MessageBoxResult.Cancel) return;
+                    includeAudio = res == MessageBoxResult.Yes;
+                }
 
-                var includeAudio = res == MessageBoxResult.Yes;
+                var nameDialog = new InputDialog("Shortcut Name", "Enter a name for the shortcut:", app.DisplayName)
+                {
+                    Owner = this
+                };
+
+                if (nameDialog.ShowDialog() != true)
+                {
+                    return;
+                }
+
+                var shortcutName = nameDialog.InputText;
+                if (string.IsNullOrWhiteSpace(shortcutName))
+                {
+                    MessageBox.Show("Shortcut name cannot be empty.", "Create Shortcut", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
                 try
                 {
-                    // check for existing icon in resources shortcut icons folder before pulling APK
                     var iconsDir = Path.Combine(resourcesPath, "shortcut icons");
                     Directory.CreateDirectory(iconsDir);
                     var existingIco = Path.Combine(iconsDir, app.PackageName + ".ico");
@@ -148,13 +211,11 @@ namespace windows_phone_app_shortcut
                     {
                         iconPath = existingPng;
                     }
-                    else
+                    else if (string.IsNullOrWhiteSpace(app.CustomArgs))
                     {
-                        // only pull APK / extract icon if no existing icon file
                         var extracted = await ExtractAppIcon(app.PackageName);
                         if (!string.IsNullOrEmpty(extracted) && File.Exists(extracted))
                         {
-                            // copy extracted png into shortcut icons folder so future operations skip repull
                             var destPng = Path.Combine(iconsDir, app.PackageName + Path.GetExtension(extracted));
                             try
                             {
@@ -163,7 +224,6 @@ namespace windows_phone_app_shortcut
                             }
                             catch
                             {
-                                // fall back to using the extracted path if copy fails
                                 iconPath = extracted;
                             }
                         }
@@ -171,20 +231,123 @@ namespace windows_phone_app_shortcut
 
                     if (string.IsNullOrEmpty(iconPath) || !File.Exists(iconPath))
                     {
-                        // Inform user but don't crash; create without custom icon
                         MessageBox.Show("Icon not found for this app. Shortcut will still be created without a custom icon.", "Icon Not Found", MessageBoxButton.OK, MessageBoxImage.Information);
                         iconPath = null;
                     }
 
-                    CreateShortcutForApp(app.PackageName, app.PackageName, includeAudio, iconPath);
+                    var shortcutArgs = BuildShortcutArgs(app, shortcutName, includeAudio);
+                    CreateShortcutForApp(shortcutName, shortcutArgs, iconPath);
                     MessageBox.Show("Shortcut created on Desktop.");
                 }
                 catch (Exception ex)
                 {
-                    // Catch any unexpected error and show friendly message
                     MessageBox.Show("Failed to create shortcut: " + ex.Message);
                 }
             }
+        }
+
+        private string BuildShortcutArgs(AppInfo app, string shortcutName, bool includeAudio)
+        {
+            var args = new List<string>
+            {
+                $"--window-title=\"{shortcutName}\""
+            };
+
+            if (string.IsNullOrWhiteSpace(app.CustomArgs))
+            {
+                args.Add("--new-display");
+                args.Add("--no-vd-system-decorations");
+                args.Add($"--start-app={app.PackageName}");
+            }
+            else if (!string.IsNullOrWhiteSpace(app.CustomArgs))
+            {
+                args.AddRange(app.CustomArgs.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+            }
+
+            if (app.RequiresAudioPrompt || string.IsNullOrWhiteSpace(app.CustomArgs))
+            {
+                args.Add(includeAudio ? "--audio-source=playback" : "--no-audio");
+            }
+
+            return string.Join(" ", args);
+        }
+
+        private void CreateShortcutForApp(string name, string args, string? iconPath)
+        {
+            var targetExe = Process.GetCurrentProcess().MainModule?.FileName
+                ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Scarlet Phone Shortcuts.exe");
+
+            var config = ShortcutConfigLoader.Load();
+            var deviceName = config.SelectedDeviceName;
+            if (!string.IsNullOrWhiteSpace(deviceName))
+            {
+                args += $" --device-name=\"{deviceName}\"";
+            }
+
+            var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+            var lnkPath = Path.Combine(desktop, name + ".lnk");
+
+            var shellType = Type.GetTypeFromProgID("WScript.Shell");
+            if (shellType == null) throw new Exception("WScript.Shell COM object not available");
+            dynamic shell = Activator.CreateInstance(shellType);
+            dynamic shortcut = shell.CreateShortcut(lnkPath);
+
+            shortcut.TargetPath = targetExe;
+            shortcut.Arguments = args;
+            shortcut.WorkingDirectory = Path.GetDirectoryName(targetExe);
+            if (!string.IsNullOrEmpty(iconPath))
+            {
+                try
+                {
+                    if (iconPath.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+                    {
+                        try { iconPath = new Uri(iconPath).LocalPath; } catch { }
+                    }
+
+                    if (File.Exists(iconPath))
+                    {
+                        var iconsDir = Path.Combine(resourcesPath, "shortcut icons");
+                        Directory.CreateDirectory(iconsDir);
+                        var icoPath = Path.Combine(iconsDir, Path.GetFileNameWithoutExtension(iconPath) + ".ico");
+
+                        var ext = Path.GetExtension(iconPath);
+                        if (string.Equals(ext, ".ico", StringComparison.OrdinalIgnoreCase))
+                        {
+                            try
+                            {
+                                File.Copy(iconPath, icoPath, true);
+                            }
+                            catch
+                            {
+                            }
+
+                            var finalIco = File.Exists(icoPath) ? icoPath : iconPath;
+                            if (File.Exists(finalIco))
+                            {
+                                shortcut.IconLocation = finalIco + ",0";
+                            }
+                        }
+                        else
+                        {
+                            try
+                            {
+                                ConvertPngToIco(iconPath, icoPath);
+                                if (File.Exists(icoPath))
+                                {
+                                    shortcut.IconLocation = icoPath + ",0";
+                                }
+                            }
+                            catch
+                            {
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                }
+            }
+            shortcut.Save();
         }
 
         private async Task<string?> ExtractAppIcon(string packageName)
@@ -267,96 +430,6 @@ namespace windows_phone_app_shortcut
                 Debug.WriteLine("FindIconInApk failed: " + ex);
                 return null;
             }
-        }
-
-        private void CreateShortcutForApp(string packageName, string name, bool includeAudio, string? iconPath)
-        {
-            var scrcpy = Path.Combine(resourcesPath, "scrcpy.exe");
-            if (!File.Exists(scrcpy)) throw new FileNotFoundException("scrcpy not found", scrcpy);
-
-            // Ensure the no-console VBS script exists in resources
-            var noConsoleVbs = EnsureNoConsoleVbs(scrcpy);
-
-            var width = 800; var height = 1280;
-            var args = $"--new-display --no-vd-system-decorations --start-app={packageName} --window-title=\"{packageName}\" "; ;
-            if (includeAudio)
-                args += "--audio-source=playback";
-            else
-                args += "--no-audio";
-
-            var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-            var lnkPath = Path.Combine(desktop, name + ".lnk");
-
-            // Use COM WScript.Shell via late binding to avoid adding extra compile-time references
-            var shellType = Type.GetTypeFromProgID("WScript.Shell");
-            if (shellType == null) throw new Exception("WScript.Shell COM object not available");
-            dynamic shell = Activator.CreateInstance(shellType);
-            dynamic shortcut = shell.CreateShortcut(lnkPath);
-
-            // Make the shortcut point to the VBS script so scrcpy runs without showing a console window
-            shortcut.TargetPath = noConsoleVbs;
-            shortcut.Arguments = args;
-            shortcut.WorkingDirectory = Path.GetDirectoryName(scrcpy);
-            if (!string.IsNullOrEmpty(iconPath))
-            {
-                try
-                {
-                    // Normalize file:// URIs to local paths
-                    if (iconPath.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
-                    {
-                        try { iconPath = new Uri(iconPath).LocalPath; } catch { }
-                    }
-
-                    if (File.Exists(iconPath))
-                    {
-                        // Create a dedicated folder for shortcut icons
-                        var iconsDir = Path.Combine(resourcesPath, "shortcut icons");
-                        Directory.CreateDirectory(iconsDir);
-                        var icoPath = Path.Combine(iconsDir, packageName + ".ico");
-
-                        var ext = Path.GetExtension(iconPath);
-                        if (string.Equals(ext, ".ico", StringComparison.OrdinalIgnoreCase))
-                        {
-                            // If it's already an .ico, copy it into our icons folder so it remains available
-                            try
-                            {
-                                File.Copy(iconPath, icoPath, true);
-                            }
-                            catch
-                            {
-                                // ignore copy failure; we'll still try to use the original
-                            }
-
-                            var finalIco = File.Exists(icoPath) ? icoPath : iconPath;
-                            if (File.Exists(finalIco))
-                            {
-                                shortcut.IconLocation = finalIco + ",0";
-                            }
-                        }
-                        else
-                        {
-                            // Assume it's a png (or other image) and try to convert
-                            try
-                            {
-                                ConvertPngToIco(iconPath, icoPath);
-                                if (File.Exists(icoPath))
-                                {
-                                    shortcut.IconLocation = icoPath + ",0";
-                                }
-                            }
-                            catch
-                            {
-                                // ignore conversion errors; shortcut will still be created
-                            }
-                        }
-                    }
-                }
-                catch
-                {
-                    // ignore icon conversion errors; shortcut will still be created
-                }
-            }
-            shortcut.Save();
         }
 
         private void ConvertPngToIco(string pngPath, string icoPath)
