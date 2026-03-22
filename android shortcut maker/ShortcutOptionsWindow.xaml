@@ -1,0 +1,79 @@
+<Window x:Class="android_shortcut_maker.ShortcutOptionsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Shortcut Options"
+        Width="430"
+        Height="520"
+        WindowStartupLocation="CenterOwner">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Margin="12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Border x:Name="CommonOptionsPanel" Grid.Row="0" BorderThickness="0">
+                <StackPanel>
+                    <TextBlock Text="Common scrcpy options" FontWeight="Bold" Margin="0,0,0,8"/>
+
+                    <CheckBox x:Name="ChkNoAudio" Content="No audio (--no-audio)" Margin="0,0,0,4"/>
+                    <CheckBox x:Name="ChkPlaybackAudio" Content="Playback audio (--audio-source=playback)" Margin="0,0,0,4"/>
+                    <CheckBox x:Name="ChkStayAwake" Content="Stay awake" Margin="0,0,0,4"/>
+                    <CheckBox x:Name="ChkTurnScreenOff" Content="Turn screen off" Margin="0,0,0,4"/>
+                    <CheckBox x:Name="ChkLockAfterExit" Content="Lock phone after closing" Margin="0,0,0,4"/>
+                    <CheckBox x:Name="ChkTop" Content="Always on top" Margin="0,0,0,4"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,2,0,4">
+                        <CheckBox x:Name="ChkAudioBuffer" Content="Audio buffer" VerticalAlignment="Center"/>
+                        <TextBox x:Name="TxtAudioBuffer" Width="80" Margin="8,0,0,0" Text="50" Visibility="Collapsed"/>
+                        <TextBlock x:Name="TxtAudioBufferUnit" Text="ms" VerticalAlignment="Center" Margin="6,0,0,0" Visibility="Collapsed"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,2,0,4">
+                        <CheckBox x:Name="ChkVideoBuffer" Content="Video buffer" VerticalAlignment="Center"/>
+                        <TextBox x:Name="TxtVideoBuffer" Width="80" Margin="8,0,0,0" Text="50" Visibility="Collapsed"/>
+                        <TextBlock x:Name="TxtVideoBufferUnit" Text="ms" VerticalAlignment="Center" Margin="6,0,0,0" Visibility="Collapsed"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,2,0,8">
+                        <CheckBox x:Name="ChkMaxSize" Content="Limit max size" VerticalAlignment="Center"/>
+                        <TextBox x:Name="TxtMaxSize" Width="80" Margin="8,0,0,0" Text="2440" Visibility="Collapsed"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border x:Name="AudioLinkPanel" Grid.Row="1" BorderThickness="1" BorderBrush="#DDD" CornerRadius="6" Padding="8" Margin="0,8,0,8" Visibility="Collapsed">
+                <StackPanel>
+                    <TextBlock Text="Audio link options" FontWeight="Bold" Margin="0,0,0,8"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                        <TextBlock Text="Audio codec:" Width="120" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="CmbCodec" Width="160">
+                            <ComboBoxItem Content="raw" IsSelected="True"/>
+                            <ComboBoxItem Content="opus"/>
+                            <ComboBoxItem Content="aac"/>
+                            <ComboBoxItem Content="flac"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                        <TextBlock Text="Bitrate (kbps):" Width="120" VerticalAlignment="Center"/>
+                        <TextBox x:Name="TxtBitrate" Width="100" Text="128"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                        <TextBlock Text="Audio buffer:" Width="120" VerticalAlignment="Center"/>
+                        <TextBox x:Name="TxtAudioLinkBuffer" Width="100" Text="80"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Flac level:" Width="120" VerticalAlignment="Center"/>
+                        <TextBox x:Name="TxtFlacLevel" Width="100" Text="2"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
+                <Button Width="90" Margin="0,0,8,0" Content="OK" Click="Ok_Click"/>
+                <Button Width="90" Content="Cancel" Click="Cancel_Click"/>
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</Window>

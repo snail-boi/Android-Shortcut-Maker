@@ -4,10 +4,11 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProductVersion>3.10</ProductVersion>
-    <ProjectGuid>ce6c62f7-3c2f-4f1c-afb2-9dfa57086d96</ProjectGuid>
+    <ProjectGuid>{abdf0f75-b8ee-4a30-8265-78a4dfb9e48e}</ProjectGuid>
     <SchemaVersion>2.0</SchemaVersion>
     <OutputName>Scarlet_Phone_Shortcuts_Installer</OutputName>
     <OutputType>Package</OutputType>
+    <Name>android shortcut maker Installer</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>

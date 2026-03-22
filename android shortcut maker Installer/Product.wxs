@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?include Version.wxi ?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" Name="android shortcut maker" Language="1033" Version="$(var.ProductVersion)" Manufacturer="Snailtech" UpgradeCode="2a5c841c-cf42-4b22-a4c9-742aa92dc0d0">
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" />
+
+    <Media Id="1" Cabinet="media1.cab" EmbedCab="yes" CompressionLevel="high"/>
+
+    <!-- Upgrade info for updates -->
+    <Upgrade Id="2a5c841c-cf42-4b22-a4c9-742aa92dc0d0">
+      <UpgradeVersion Minimum="0.0.0" Maximum="99.0.0" IncludeMinimum="yes" IncludeMaximum="no" Property="OLDPRODUCTS"/>
+    </Upgrade>
+
+    <InstallExecuteSequence>
+      <RemoveExistingProducts Before="InstallInitialize"/>
+    </InstallExecuteSequence>
+
+    <!-- NOTE: The standard Wix UI dialogs (for example, "WixUI_Minimal") are provided by the WixUIExtension.
+         To enable the UI and avoid unresolved symbol errors, add the WixUIExtension to your .wixproj like this:
+
+           <ItemGroup>
+             <WixExtension Include="WixUIExtension" />
+           </ItemGroup>
+
+         If you don't want to reference the extension, remove the UIRef (as done here) and the installer will be built without the standard dialogs. -->
+
+    <!-- Removed <UIRef Id="WixUI_Minimal"/> to avoid unresolved WixUI extension reference when the project doesn't include WixUIExtension -->
+
+    <!-- Directory structure -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+
+      <!-- Start Menu (Programs) folder for shortcut -->
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ProgramMenuDir" Name="android shortcut maker">
+          <!-- Start Menu shortcut component (per-user keypath) -->
+          <Component Id="StartMenuShortcutComponent" Guid="cfddcc03-d2da-46db-9f60-c7517a749d77">
+            <CreateFolder />
+            <Shortcut Id="ApplicationStartMenuShortcut"
+                      Name="android shortcut maker"
+                      Description="android shortcut maker"
+                      Target="[INSTALLFOLDER]android shortcut maker.exe"
+                      WorkingDirectory="INSTALLFOLDER" />
+            <RemoveFile Id="RemoveShortCutFile" Name="android shortcut maker.lnk" On="uninstall" Directory="ProgramMenuDir"/>
+            <RemoveFolder Id="RemoveProgramMenuDir" Directory="ProgramMenuDir" On="uninstall" />
+            <RegistryValue Root="HKCU" Key="Software\Snail\AndroidShortcutMaker" Name="StartMenuShortcut" Type="string" Value="1" KeyPath="yes"/>
+          </Component>
+        </Directory>
+      </Directory>
+
+      <!-- Main EXE in Program Files -->
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="android shortcut maker">
+
+          <Component Id="AppExeComponent" Guid="67f0a9e7-b205-4f20-a761-3ee2bc529f30">
+            <File Id="AppExe" Source="..\android shortcut maker\bin\Release\net8.0-windows\android shortcut maker.exe" KeyPath="yes" Vital="yes"/>
+          </Component>
+
+          <Component Id="AppDllComponent" Guid="4f06533f-b3f0-4c73-bc80-22e4fce9c65a">
+            <File Id="AppDll" Source="..\android shortcut maker\bin\Release\net8.0-windows\android shortcut maker.dll" KeyPath="yes" Vital="yes"/>
+          </Component>
+
+          <Component Id="DepsJsonComponent" Guid="6dc9cdad-bb9e-493c-b33c-a40d4bc674af">
+            <File Id="DepsJson" Source="..\android shortcut maker\bin\Release\net8.0-windows\android shortcut maker.deps.json" KeyPath="yes" Vital="yes"/>
+          </Component>
+
+          <Component Id="RuntimeConfigJsonComponent" Guid="ca7587bf-f292-4d73-84db-1078459a52ca">
+            <File Id="RuntimeConfigJson" Source="..\android shortcut maker\bin\Release\net8.0-windows\android shortcut maker.runtimeconfig.json" KeyPath="yes" Vital="yes"/>
+          </Component>
+        </Directory>
+      </Directory>
+
+      <!-- Resources folder in per-user AppData -->
+      <Directory Id="AppDataFolder">
+        <Directory Id="AppDataSnailFolder" Name="Snail">
+          <Directory Id="AppDataResourcesFolder" Name="Resources">
+
+            <Component Id="AdbWinApiDllComponent" Guid="2f8e3ec6-6ac1-4cb7-b78e-d4f8ee7d3658">
+              <File Id="AdbWinApiDll" Source="..\android shortcut maker\Resources\AdbWinApi.dll" />
+              <RemoveFile Id="Remove_AdbWinApiDll" Name="AdbWinApi.dll" Directory="AppDataResourcesFolder" On="uninstall"/>
+              <RegistryValue Root="HKCU" Key="Software\Snail\AndroidShortcutMaker\Resources" Name="AdbWinApiDll" Type="string" Value="1" KeyPath="yes"/>
+            </Component>
+
+            <Component Id="AdbWinUsbApiDllComponent" Guid="2d7def48-5e89-4af9-9679-d6c7e1ac125f">
+              <File Id="AdbWinUsbApiDll" Source="..\android shortcut maker\Resources\AdbWinUsbApi.dll" />
+              <RemoveFile Id="Remove_AdbWinUsbApiDll" Name="AdbWinUsbApi.dll" Directory="AppDataResourcesFolder" On="uninstall"/>
+              <RegistryValue Root="HKCU" Key="Software\Snail\AndroidShortcutMaker\Resources" Name="AdbWinUsbApiDll" Type="string" Value="1" KeyPath="yes"/>
+            </Component>
+
+            <Component Id="AvcodecDllComponent" Guid="21f2e360-b26b-4601-b88d-d0a08fbb4d42">
+              <File Id="AvcodecDll" Source="..\android shortcut maker\Resources\avcodec-61.dll" />
+              <RemoveFile Id="Remove_AvcodecDll" Name="avcodec-61.dll" Directory="AppDataResourcesFolder" On="uninstall"/>
+              <RegistryValue Root="HKCU" Key="Software\Snail\AndroidShortcutMaker\Resources" Name="AvcodecDll" Type="string" Value="1" KeyPath="yes"/>
+            </Component>
+
+            <Component Id="AvformatDllComponent" Guid="524b10d3-c89e-4e74-b4d5-cb14e98fba28">
+              <File Id="AvformatDll" Source="..\android shortcut maker\Resources\avformat-61.dll" />
+              <RemoveFile Id="Remove_AvformatDll" Name="avformat-61.dll" Directory="AppDataResourcesFolder" On="uninstall"/>
+              <RegistryValue Root="HKCU" Key="Software\Snail\AndroidShortcutMaker\Resources" Name="AvformatDll" Type="string" Value="1" KeyPath="yes"/>
+            </Component>
+
+            <Component Id="AvutilDllComponent" Guid="f7180f7c-4ea7-4df3-825d-bf0f4e4b00fd">
+              <File Id="AvutilDll" Source="..\android shortcut maker\Resources\avutil-59.dll" />
+              <RemoveFile Id="Remove_AvutilDll" Name="avutil-59.dll" Directory="AppDataResourcesFolder" On="uninstall"/>
+              <RegistryValue Root="HKCU" Key="Software\Snail\AndroidShortcutMaker\Resources" Name="AvutilDll" Type="string" Value="1" KeyPath="yes"/>
+            </Component>
+
+            <Component Id="LibusbDllComponent" Guid="b565b4a4-a354-4f67-970f-d3bb598f5d58">
+              <File Id="LibusbDll" Source="..\android shortcut maker\Resources\libusb-1.0.dll" />
+              <RemoveFile Id="Remove_LibusbDll" Name="libusb-1.0.dll" Directory="AppDataResourcesFolder" On="uninstall"/>
+              <RegistryValue Root="HKCU" Key="Software\Snail\AndroidShortcutMaker\Resources" Name="LibusbDll" Type="string" Value="1" KeyPath="yes"/>
+            </Component>
+
+            <Component Id="OpenTerminalBatComponent" Guid="6f5c8cca-e8a1-40ce-910b-82add7a0a232">
+              <File Id="OpenTerminalBat" Source="..\android shortcut maker\Resources\open_a_terminal_here.bat" />
+              <RemoveFile Id="Remove_OpenTerminalBat" Name="open_a_terminal_here.bat" Directory="AppDataResourcesFolder" On="uninstall"/>
+              <RegistryValue Root="HKCU" Key="Software\Snail\AndroidShortcutMaker\Resources" Name="OpenTerminalBat" Type="string" Value="1" KeyPath="yes"/>
+            </Component>
+
+            <Component Id="ScrcpyConsoleBatComponent" Guid="65c86f5b-8fd8-4609-a595-c0feec492bc4">
+              <File Id="ScrcpyConsoleBat" Source="..\android shortcut maker\Resources\scrcpy-console.bat" />
+              <RemoveFile Id="Remove_ScrcpyConsoleBat" Name="scrcpy-console.bat" Directory="AppDataResourcesFolder" On="uninstall"/>
+              <RegistryValue Root="HKCU" Key="Software\Snail\AndroidShortcutMaker\Resources" Name="ScrcpyConsoleBat" Type="string" Value="1" KeyPath="yes"/>
+            </Component>
+
+            <Component Id="ScrcpyNoConsoleVbsComponent" Guid="ab0f6d32-2d06-4aea-a8c4-fda701223b3f">
+              <File Id="ScrcpyNoConsoleVbs" Source="..\android shortcut maker\Resources\scrcpy-noconsole.vbs" />
+              <RemoveFile Id="Remove_ScrcpyNoConsoleVbs" Name="scrcpy-noconsole.vbs" Directory="AppDataResourcesFolder" On="uninstall"/>
+              <RegistryValue Root="HKCU" Key="Software\Snail\AndroidShortcutMaker\Resources" Name="ScrcpyNoConsoleVbs" Type="string" Value="1" KeyPath="yes"/>
+            </Component>
+
+            <Component Id="ScrcpyServerComponent" Guid="979767e2-27ae-46aa-b1ea-ccfa2ebbbbe1">
+              <File Id="ScrcpyServer" Source="..\android shortcut maker\Resources\scrcpy-server" />
+              <RemoveFile Id="Remove_ScrcpyServer" Name="scrcpy-server" Directory="AppDataResourcesFolder" On="uninstall"/>
+              <RegistryValue Root="HKCU" Key="Software\Snail\AndroidShortcutMaker\Resources" Name="ScrcpyServer" Type="string" Value="1" KeyPath="yes"/>
+            </Component>
+
+            <Component Id="SDL2DllComponent" Guid="f8cbaad9-4e6a-4f5e-b5f3-7e0189f5f6e1">
+              <File Id="SDL2Dll" Source="..\android shortcut maker\Resources\SDL2.dll" />
+              <RemoveFile Id="Remove_SDL2Dll" Name="SDL2.dll" Directory="AppDataResourcesFolder" On="uninstall"/>
+              <RegistryValue Root="HKCU" Key="Software\Snail\AndroidShortcutMaker\Resources" Name="SDL2Dll" Type="string" Value="1" KeyPath="yes"/>
+            </Component>
+
+            <Component Id="SwresampleDllComponent" Guid="2fddf600-9255-4228-92ee-7396a5f67b03">
+              <File Id="SwresampleDll" Source="..\android shortcut maker\Resources\swresample-5.dll" />
+              <RemoveFile Id="Remove_SwresampleDll" Name="swresample-5.dll" Directory="AppDataResourcesFolder" On="uninstall"/>
+              <RegistryValue Root="HKCU" Key="Software\Snail\AndroidShortcutMaker\Resources" Name="SwresampleDll" Type="string" Value="1" KeyPath="yes"/>
+            </Component>
+
+            <!-- Folder component to avoid removing other apps' files on uninstall -->
+            <Component Id="AppDataFolderComponent" Guid="f57d0ccc-75ab-4f4e-8975-edb8cb2528f4">
+              <CreateFolder />
+              <RemoveFolder Id="RemoveResourcesFolder" Directory="AppDataResourcesFolder" On="uninstall"/>
+              <RemoveFolder Id="RemoveAppDataSnailFolder" Directory="AppDataSnailFolder" On="uninstall"/>
+              <RegistryValue Root="HKCU" Key="Software\Snail\AndroidShortcutMaker" Name="Installed" Type="integer" Value="1" KeyPath="yes"/>
+            </Component>
+
+          </Directory>
+        </Directory>
+      </Directory>
+
+    </Directory>
+
+    <!-- Feature -->
+    <Feature Id="Complete" Title="android shortcut maker" Level="1">
+      <ComponentRef Id="AppExeComponent"/>
+      <ComponentRef Id="AppDllComponent"/>
+      <ComponentRef Id="DepsJsonComponent"/>
+      <ComponentRef Id="RuntimeConfigJsonComponent"/>
+      <ComponentRef Id="StartMenuShortcutComponent"/>
+
+      <ComponentRef Id="AdbWinApiDllComponent"/>
+      <ComponentRef Id="AdbWinUsbApiDllComponent"/>
+      <ComponentRef Id="AvcodecDllComponent"/>
+      <ComponentRef Id="AvformatDllComponent"/>
+      <ComponentRef Id="AvutilDllComponent"/>
+      <ComponentRef Id="LibusbDllComponent"/>
+      <ComponentRef Id="OpenTerminalBatComponent"/>
+      <ComponentRef Id="ScrcpyConsoleBatComponent"/>
+      <ComponentRef Id="ScrcpyNoConsoleVbsComponent"/>
+      <ComponentRef Id="ScrcpyServerComponent"/>
+      <ComponentRef Id="SDL2DllComponent"/>
+      <ComponentRef Id="SwresampleDllComponent"/>
+      <ComponentRef Id="AppDataFolderComponent"/>
+    </Feature>
+
+  </Product>
+</Wix>

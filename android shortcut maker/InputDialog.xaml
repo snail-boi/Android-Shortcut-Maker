@@ -1,7 +1,11 @@
-<Window x:Class="windows_phone_app_shortcut.InputDialog"
+<Window x:Class="android_shortcut_maker.InputDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Shortcut Name" Height="180" Width="420" WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
+        Title="Shortcut Name"
+        Height="180"
+        Width="420"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
     <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
