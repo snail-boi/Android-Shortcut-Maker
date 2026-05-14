@@ -9,67 +9,10 @@
         Background="{DynamicResource WindowBackgroundBrush}">
 
     <Window.Resources>
-        <Color x:Key="AccentColor">#FF4B9AF6</Color>
-        <SolidColorBrush x:Key="AccentBrush" Color="{DynamicResource AccentColor}" />
-        <SolidColorBrush x:Key="WindowBackgroundBrush">#FFF0F4F8</SolidColorBrush>
-        <SolidColorBrush x:Key="CardBrush">#FFFFFFFF</SolidColorBrush>
-        <SolidColorBrush x:Key="PrimaryTextBrush">#FF111827</SolidColorBrush>
-        <SolidColorBrush x:Key="SubtleTextBrush">#FF6B7280</SolidColorBrush>
-        <SolidColorBrush x:Key="IconTileBrush">#FFEFF6FF</SolidColorBrush>
-        <SolidColorBrush x:Key="ItemHoverBrush">#FFF1F9FF</SolidColorBrush>
-        <SolidColorBrush x:Key="ItemSelectedBrush">#FFE8F3FF</SolidColorBrush>
-        <SolidColorBrush x:Key="ChevronBrush">#FFD1D5DB</SolidColorBrush>
+        <!-- Brushes and implicit control styles are now in App.xaml. -->
+        <!-- Only MainWindow-specific keyed resources remain here.    -->
 
-        <Style TargetType="Button" x:Key="PrimaryButton">
-            <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
-            <Setter Property="Foreground" Value="White" />
-            <Setter Property="Padding" Value="10,6" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="8" SnapsToDevicePixels="True">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,2"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Opacity" Value="0.92" />
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Opacity" Value="0.85" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style TargetType="ListBoxItem">
-            <Setter Property="Margin" Value="4,2" />
-            <Setter Property="Padding" Value="8" />
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ListBoxItem">
-                        <Border x:Name="Bd" Background="Transparent" CornerRadius="8">
-                            <ContentPresenter />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ItemHoverBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ItemSelectedBrush}" />
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-                                <Setter TargetName="Bd" Property="BorderThickness" Value="1" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+        <Style TargetType="Button" x:Key="PrimaryButton" BasedOn="{StaticResource {x:Type Button}}"/>
 
         <DataTemplate x:Key="AppTemplate" DataType="{x:Type local:AppInfo}">
             <Grid Margin="2">
@@ -79,32 +22,39 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <Border Width="40" Height="40" CornerRadius="8" Background="{DynamicResource IconTileBrush}" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Grid>
-                        <Image Source="{Binding IconPath}" Width="40" Height="40" Stretch="UniformToFill">
-                            <Image.Style>
-                                <Style TargetType="Image">
-                                    <Setter Property="Visibility" Value="Visible" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IconPath}" Value="{x:Null}">
-                                            <Setter Property="Visibility" Value="Collapsed" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Image.Style>
-                        </Image>
-                    </Grid>
+                <Border Width="40" Height="40" CornerRadius="8"
+                        Background="{DynamicResource IconTileBrush}"
+                        HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Image Source="{Binding IconPath}" Width="40" Height="40" Stretch="UniformToFill">
+                        <Image.Style>
+                            <Style TargetType="Image">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IconPath}" Value="{x:Null}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Image.Style>
+                    </Image>
                 </Border>
 
                 <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding DisplayName}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryTextBrush}" TextTrimming="CharacterEllipsis" />
-                    <TextBlock Text="{Binding PackageName}" FontSize="12" Foreground="{DynamicResource SubtleTextBrush}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding DisplayName}" FontSize="14" FontWeight="SemiBold"
+                               Foreground="{DynamicResource PrimaryTextBrush}"
+                               TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding PackageName}" FontSize="12"
+                               Foreground="{DynamicResource SubtleTextBrush}"
+                               TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
 
-                <TextBlock Grid.Column="2" Text=">" FontSize="18" Foreground="{DynamicResource ChevronBrush}" VerticalAlignment="Center" Margin="10,0,6,0" />
+                <TextBlock Grid.Column="2" Text="›" FontSize="18"
+                           Foreground="{DynamicResource ChevronBrush}"
+                           VerticalAlignment="Center" Margin="10,0,6,0"/>
             </Grid>
         </DataTemplate>
     </Window.Resources>
+
 
     <Grid Margin="16">
         <Grid.RowDefinitions>

@@ -1,0 +1,26 @@
+<Window x:Class="android_shortcut_maker.QualityPickerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Change Quality"
+        Width="340" Height="320"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        Topmost="True"
+        Background="{DynamicResource WindowBackgroundBrush}">
+    <StackPanel Margin="16">
+        <TextBlock Text="Audio quality" FontWeight="Bold" FontSize="13" Margin="0,0,0,10"
+                   Foreground="{DynamicResource PrimaryTextBrush}"/>
+
+        <ListBox x:Name="PresetList" BorderThickness="1" BorderBrush="#DDD"
+                 SelectedIndex="0" Margin="0,0,0,14"/>
+
+        <TextBlock Text="Changes take effect immediately by restarting the session."
+                   Foreground="{DynamicResource SubtleTextBrush}" FontSize="11"
+                   TextWrapping="Wrap" Margin="0,0,0,14"/>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Width="90" Margin="0,0,8,0" Content="Apply" Click="BtnApply_Click"/>
+            <Button Width="90"                  Content="Cancel" Click="BtnCancel_Click"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

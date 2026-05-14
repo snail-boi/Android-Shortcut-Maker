@@ -23,8 +23,7 @@ public partial class MainWindow : Window
         _config = ShortcutMakerConfigStore.Load();
         ApplyTheme(_config.UseDarkMode);
 
-        var baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Snail", "AndroidShortcutMaker");
-        _iconsDir = Path.Combine(baseDir, "shortcut icons");
+        _iconsDir = AppPaths.IconsDir;
         Directory.CreateDirectory(_iconsDir);
 
         Loaded += MainWindow_Loaded;
@@ -77,7 +76,7 @@ public partial class MainWindow : Window
 
     private List<AppInfo> GetExtraApps()
     {
-        var resourcesDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Snail", "AndroidShortcutMaker", "Resources");
+        var resourcesDir = AppPaths.ResourcesDir;
 
         string? ToIconUri(string fileName)
         {
@@ -111,7 +110,7 @@ public partial class MainWindow : Window
             return result;
         }
 
-        var output = await AdbRunner.RunCaptureAsync(adb, $"-s {currentDevice} shell pm list packages -f -3");
+        var output = await AdbHelper.RunAdbCaptureAsync($"-s {currentDevice} shell pm list packages -f -3");
         foreach (var line in output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
         {
             var m = Regex.Match(line, "package:(.+)=(.+)");
@@ -135,32 +134,65 @@ public partial class MainWindow : Window
 
     private async Task<string?> ResolveCurrentDeviceForListAsync()
     {
-        return await ShortcutLauncher.ResolveDeviceAsync(_config.Paths.Adb, _config.SelectedDeviceUSB, _config.SelectedDeviceWiFi, allowPortRecoveryPrompt: false);
+        AdbHelper.AdbPath = _config.Paths.Adb;
+        var resolved = await ShortcutLauncher.ResolveDeviceAsync(
+            _config.SelectedDeviceUSB,
+            _config.SelectedDeviceWifiMdnsName,
+            _config.SelectedDeviceWifiLastKnownIpPort);
+
+        // Cache updated ip:port if resolution succeeded wirelessly.
+        if (!string.IsNullOrWhiteSpace(resolved) && resolved.Contains(':'))
+        {
+            _config.SelectedDeviceWifiLastKnownIpPort = resolved;
+            ShortcutMakerConfigStore.Save(_config);
+        }
+
+        return string.IsNullOrWhiteSpace(resolved) ? null : resolved;
     }
+
 
     private async Task UpdateFooterStatusAsync()
     {
         var adb = _config.Paths.Adb;
         if (!File.Exists(adb))
         {
-            FooterStatusText.Text = "Device: not configured | USB: - | Wi-Fi: - | Status: no device found";
+            FooterStatusText.Text = "Device: not configured | Status: no device found";
             return;
         }
 
-        var devices = await AdbRunner.RunCaptureAsync(adb, "devices");
-        var lines = devices.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+        AdbHelper.AdbPath = adb;
+        var devices = await AdbHelper.RunAdbCaptureAsync("devices");
+        var lines = devices
+            .Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries)
             .Where(x => !x.StartsWith("List of devices", StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        bool usbConnected = !string.IsNullOrWhiteSpace(_config.SelectedDeviceUSB)
-            && lines.Any(x => x.StartsWith(_config.SelectedDeviceUSB) && x.EndsWith("device"));
+        bool IsOnline(string id) =>
+            !string.IsNullOrWhiteSpace(id)
+            && lines.Any(x => x.StartsWith(id, StringComparison.OrdinalIgnoreCase)
+                              && x.TrimEnd().EndsWith("device", StringComparison.OrdinalIgnoreCase));
 
-        bool wifiConnected = !string.IsNullOrWhiteSpace(_config.SelectedDeviceWiFi)
-            && lines.Any(x => x.StartsWith(_config.SelectedDeviceWiFi) && x.EndsWith("device"));
+        var usbConnected = IsOnline(_config.SelectedDeviceUSB);
+        var wifiConnected = IsOnline(_config.SelectedDeviceWifiLastKnownIpPort);
 
-        var status = usbConnected ? "USB connected" : wifiConnected ? "Wi-Fi connected" : "no device found";
-        FooterStatusText.Text = $"Device: {_config.SelectedDeviceName} | USB: {_config.SelectedDeviceUSB} | Wi-Fi: {_config.SelectedDeviceWiFi} | Status: {status}";
+        string status;
+        if (usbConnected)
+            status = "USB connected";
+        else if (wifiConnected)
+            status = "Wireless Debugging connected";
+        else
+            status = "no device found";
+
+        var wdLabel = !string.IsNullOrWhiteSpace(_config.SelectedDeviceWifiMdnsName)
+            ? _config.SelectedDeviceWifiMdnsName
+            : (!string.IsNullOrWhiteSpace(_config.SelectedDeviceWifiLastKnownIpPort)
+                ? _config.SelectedDeviceWifiLastKnownIpPort
+                : "-");
+
+        FooterStatusText.Text =
+            $"Device: {_config.SelectedDeviceName} | USB: {_config.SelectedDeviceUSB} | WD: {wdLabel} | Status: {status}";
     }
+
 
     private async void AppsList_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
@@ -257,9 +289,11 @@ public partial class MainWindow : Window
     private string BuildShortcutArgs(AppInfo app, string shortcutName, List<string> optionArgs)
     {
         var args = new List<string>
-        {
-            $"--window-title=\"{shortcutName}\""
-        };
+    {
+        $"--window-title={shortcutName}",
+        // Unique ID embedded at creation. Stable for the lifetime of this .lnk file.
+        $"--sc-id={Guid.NewGuid():N}"
+    };
 
         if (app.Kind == ShortcutKind.InstalledApp)
         {
@@ -281,28 +315,25 @@ public partial class MainWindow : Window
         foreach (var option in optionArgs)
         {
             if (!args.Contains(option, StringComparer.OrdinalIgnoreCase))
-            {
                 args.Add(option);
-            }
         }
 
         if (!string.IsNullOrWhiteSpace(_config.SelectedDeviceName))
-        {
-            args.Add($"--target-name=\"{_config.SelectedDeviceName}\"");
-        }
+            args.Add($"--target-name={_config.SelectedDeviceName}");
 
         if (!string.IsNullOrWhiteSpace(_config.SelectedDeviceUSB))
-        {
             args.Add($"--target-usb={_config.SelectedDeviceUSB}");
-        }
 
-        if (!string.IsNullOrWhiteSpace(_config.SelectedDeviceWiFi))
-        {
-            args.Add($"--target-wifi={_config.SelectedDeviceWiFi}");
-        }
+        if (!string.IsNullOrWhiteSpace(_config.SelectedDeviceWifiMdnsName))
+            args.Add($"--target-mdns={_config.SelectedDeviceWifiMdnsName}");
+
+        if (!string.IsNullOrWhiteSpace(_config.SelectedDeviceWifiLastKnownIpPort))
+            args.Add($"--target-last-ip={_config.SelectedDeviceWifiLastKnownIpPort}");
 
         return string.Join(" ", args);
     }
+
+
 
     private async Task<string?> ResolveIconPathAsync(AppInfo app, bool promptForUploadWhenMissing)
     {
@@ -491,7 +522,7 @@ public partial class MainWindow : Window
             if (string.IsNullOrWhiteSpace(device)) return null;
 
             var adb = _config.Paths.Adb;
-            var outp = await AdbRunner.RunCaptureAsync(adb, $"-s {device} shell pm path {packageName}");
+            var outp = await AdbHelper.RunAdbCaptureAsync($"-s {device} shell pm path {packageName}");
             var match = Regex.Match(outp, "package:(.+)");
             if (!match.Success)
             {
@@ -503,7 +534,7 @@ public partial class MainWindow : Window
             Directory.CreateDirectory(tempDir);
 
             var localApk = Path.Combine(tempDir, packageName + ".apk");
-            await AdbRunner.RunCaptureAsync(adb, $"-s {device} pull \"{apkOnDevice}\" \"{localApk}\"");
+            await AdbHelper.RunAdbAsync($"-s {device} pull \"{apkOnDevice}\" \"{localApk}\"");
             if (!File.Exists(localApk))
             {
                 return null;
@@ -555,40 +586,15 @@ public partial class MainWindow : Window
         ShortcutMakerConfigStore.Save(_config);
     }
 
+
     private void ApplyTheme(bool dark)
     {
-        Resources["WindowBackgroundBrush"] = dark
-            ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(17, 24, 39))
-            : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(240, 244, 248));
-
-        Resources["CardBrush"] = dark
-            ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(31, 41, 55))
-            : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 255));
-
-        Resources["PrimaryTextBrush"] = dark
-            ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(243, 244, 246))
-            : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(17, 24, 39));
-
-        Resources["SubtleTextBrush"] = dark
-            ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(156, 163, 175))
-            : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(107, 114, 128));
-
-        Resources["IconTileBrush"] = dark
-            ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(55, 65, 81))
-            : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(239, 246, 255));
-
-        Resources["ItemHoverBrush"] = dark
-            ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(55, 65, 81))
-            : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(241, 249, 255));
-
-        Resources["ItemSelectedBrush"] = dark
-            ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(30, 58, 95))
-            : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(232, 243, 255));
-
-        Resources["ChevronBrush"] = dark
-            ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(156, 163, 175))
-            : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(209, 213, 219));
-
+        App.ApplyTheme(dark);
         ThemeToggleButton.Content = dark ? "Light Mode" : "Dark Mode";
     }
+
+
+    private static System.Windows.Media.SolidColorBrush Brush(byte r, byte g, byte b)
+        => new(System.Windows.Media.Color.FromRgb(r, g, b));
+
 }

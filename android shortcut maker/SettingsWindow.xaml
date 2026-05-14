@@ -1,39 +1,132 @@
 <Window x:Class="android_shortcut_maker.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Device Settings"
-        Width="500"
-        Height="280"
+        Title="Settings"
+        Width="540"
+        Height="600"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize">
-    <Grid Margin="12">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="130" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
+        ResizeMode="NoResize"
+        Background="{DynamicResource WindowBackgroundBrush}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="16">
 
-        <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Device Name:"/>
-        <TextBox x:Name="TxtName" Grid.Row="0" Grid.Column="1" Margin="0,2,0,6" />
+            <!-- ── Device ── -->
+            <TextBlock Text="Device" FontWeight="Bold" FontSize="13" Margin="0,0,0,10"
+                       Foreground="{DynamicResource PrimaryTextBrush}"/>
 
-        <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="USB Serial:"/>
-        <TextBox x:Name="TxtUsb" Grid.Row="1" Grid.Column="1" Margin="0,2,0,6" />
+            <Grid Margin="0,0,0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="150"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Wi-Fi (ip:port):"/>
-        <TextBox x:Name="TxtWifi" Grid.Row="2" Grid.Column="1" Margin="0,2,0,6" />
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Device name:" VerticalAlignment="Center" Margin="0,0,0,8" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                <TextBox   x:Name="TxtName" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,0,8"/>
 
-        <TextBlock x:Name="TxtStatus" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,4,0,0" Foreground="Gray" TextWrapping="Wrap" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="USB serial:" VerticalAlignment="Center" Margin="0,0,0,8" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                <TextBox   x:Name="TxtUsb" Grid.Row="1" Grid.Column="1" Margin="0,0,6,8" IsReadOnly="True"/>
+                <Button    x:Name="BtnDetectUsb" Grid.Row="1" Grid.Column="2" Content="Detect USB" Padding="8,3" Margin="0,0,0,8" Click="BtnDetectUsb_Click"/>
 
-        <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-            <Button x:Name="BtnAuto" Width="120" Margin="0,0,8,0" Content="Auto Detect" Click="BtnAuto_Click" />
-            <Button Width="90" Margin="0,0,8,0" Content="Save" Click="BtnSave_Click" />
-            <Button Width="90" Content="Cancel" Click="BtnCancel_Click" />
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="WD service name:" VerticalAlignment="Center" Margin="0,0,0,8" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                <TextBox   x:Name="TxtMdns" Grid.Row="2" Grid.Column="1" Margin="0,0,6,8" IsReadOnly="True"/>
+                <Button    x:Name="BtnPairWireless" Grid.Row="2" Grid.Column="2" Content="Pair phone..." Padding="8,3" Margin="0,0,0,8" Click="BtnPairWireless_Click"/>
+
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Last known ip:port:" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource SubtleTextBrush}"/>
+                <TextBox   x:Name="TxtLastIp" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" IsReadOnly="True" FontSize="11" Foreground="{DynamicResource SubtleTextBrush}"/>
+            </Grid>
+
+            <TextBlock x:Name="TxtStatus" Foreground="{DynamicResource SubtleTextBrush}"
+                       FontSize="11" TextWrapping="Wrap" Margin="0,4,0,14"/>
+
+            <Separator Margin="0,0,0,14"/>
+
+            <!-- ── Global Shortcuts ── -->
+            <TextBlock Text="Global Shortcuts" FontWeight="Bold" FontSize="13" Margin="0,0,0,4"
+                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+            <TextBlock Text="Used by Shortcut Control when a shortcut does not have custom shortcuts configured."
+                       Foreground="{DynamicResource SubtleTextBrush}" FontSize="11"
+                       TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="150"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Modifier -->
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Modifier:" VerticalAlignment="Center" Margin="0,0,0,6"/>
+                <ComboBox  x:Name="CmbGlobalMod" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,0,6">
+                    <ComboBoxItem Content="None"        Tag="0"/>
+                    <ComboBoxItem Content="Alt"         Tag="1" IsSelected="True"/>
+                    <ComboBoxItem Content="Ctrl"        Tag="2"/>
+                    <ComboBoxItem Content="Shift"       Tag="4"/>
+                    <ComboBoxItem Content="Ctrl+Alt"    Tag="3"/>
+                    <ComboBoxItem Content="Alt+Shift"   Tag="5"/>
+                    <ComboBoxItem Content="Ctrl+Shift"  Tag="6"/>
+                </ComboBox>
+
+                <!-- Audio toggle -->
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Audio toggle:" VerticalAlignment="Center" Margin="0,0,0,4"/>
+                <TextBox   x:Name="TxtGlobalAudioToggle" Grid.Row="1" Grid.Column="1" IsReadOnly="True" Margin="0,0,6,4" Text="None"/>
+                <Button    Grid.Row="1" Grid.Column="2" Content="Pick" Padding="8,2" Margin="0,0,0,4" Click="BtnGlobalPickAudioToggle_Click"/>
+
+                <!-- Play/Pause -->
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Play / Pause:" VerticalAlignment="Center" Margin="0,0,0,4"/>
+                <TextBox   x:Name="TxtGlobalPlayPause" Grid.Row="2" Grid.Column="1" IsReadOnly="True" Margin="0,0,6,4" Text="None"/>
+                <Button    Grid.Row="2" Grid.Column="2" Content="Pick" Padding="8,2" Margin="0,0,0,4" Click="BtnGlobalPickPlayPause_Click"/>
+
+                <!-- Next -->
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Next track:" VerticalAlignment="Center" Margin="0,0,0,4"/>
+                <TextBox   x:Name="TxtGlobalNext" Grid.Row="3" Grid.Column="1" IsReadOnly="True" Margin="0,0,6,4" Text="None"/>
+                <Button    Grid.Row="3" Grid.Column="2" Content="Pick" Padding="8,2" Margin="0,0,0,4" Click="BtnGlobalPickNext_Click"/>
+
+                <!-- Previous -->
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="Previous track:" VerticalAlignment="Center" Margin="0,0,0,4"/>
+                <TextBox   x:Name="TxtGlobalPrev" Grid.Row="4" Grid.Column="1" IsReadOnly="True" Margin="0,0,6,4" Text="None"/>
+                <Button    Grid.Row="4" Grid.Column="2" Content="Pick" Padding="8,2" Margin="0,0,0,4" Click="BtnGlobalPickPrev_Click"/>
+
+                <!-- Volume up -->
+                <TextBlock Grid.Row="5" Grid.Column="0" Text="Volume up:" VerticalAlignment="Center" Margin="0,0,0,4"/>
+                <TextBox   x:Name="TxtGlobalVolUp" Grid.Row="5" Grid.Column="1" IsReadOnly="True" Margin="0,0,6,4" Text="None"/>
+                <Button    Grid.Row="5" Grid.Column="2" Content="Pick" Padding="8,2" Margin="0,0,0,4" Click="BtnGlobalPickVolUp_Click"/>
+
+                <!-- Volume down -->
+                <TextBlock Grid.Row="6" Grid.Column="0" Text="Volume down:" VerticalAlignment="Center" Margin="0,0,0,4"/>
+                <TextBox   x:Name="TxtGlobalVolDown" Grid.Row="6" Grid.Column="1" IsReadOnly="True" Margin="0,0,6,4" Text="None"/>
+                <Button    Grid.Row="6" Grid.Column="2" Content="Pick" Padding="8,2" Margin="0,0,0,4" Click="BtnGlobalPickVolDown_Click"/>
+
+                <!-- Quality -->
+                <TextBlock Grid.Row="7" Grid.Column="0" Text="Quality picker:" VerticalAlignment="Center" Margin="0,0,0,4"/>
+                <TextBox   x:Name="TxtGlobalQuality" Grid.Row="7" Grid.Column="1" IsReadOnly="True" Margin="0,0,6,4" Text="None"/>
+                <Button    Grid.Row="7" Grid.Column="2" Content="Pick" Padding="8,2" Margin="0,0,0,4" Click="BtnGlobalPickQuality_Click"/>
+            </Grid>
+
+            <Separator Margin="0,14,0,14"/>
+
+            <!-- ── Save / Cancel ── -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Width="90" Margin="0,0,8,0" Content="Save"   Click="BtnSave_Click"/>
+                <Button Width="90"                  Content="Cancel" Click="BtnCancel_Click"/>
+            </StackPanel>
+
         </StackPanel>
-    </Grid>
+    </ScrollViewer>
 </Window>

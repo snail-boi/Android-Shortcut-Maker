@@ -2,50 +2,50 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Shortcut Options"
-        Width="430"
-        Height="520"
-        WindowStartupLocation="CenterOwner">
+        Width="460"
+        Height="680"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource WindowBackgroundBrush}">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <Grid Margin="12">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+        <StackPanel Margin="14">
 
-            <Border x:Name="CommonOptionsPanel" Grid.Row="0" BorderThickness="0">
+            <!-- ── Common options ── -->
+            <Border x:Name="CommonOptionsPanel" BorderThickness="0" Margin="0,0,0,10">
                 <StackPanel>
-                    <TextBlock Text="Common scrcpy options" FontWeight="Bold" Margin="0,0,0,8"/>
-
-                    <CheckBox x:Name="ChkNoAudio" Content="No audio (--no-audio)" Margin="0,0,0,4"/>
-                    <CheckBox x:Name="ChkPlaybackAudio" Content="Playback audio (--audio-source=playback)" Margin="0,0,0,4"/>
-                    <CheckBox x:Name="ChkStayAwake" Content="Stay awake" Margin="0,0,0,4"/>
-                    <CheckBox x:Name="ChkTurnScreenOff" Content="Turn screen off" Margin="0,0,0,4"/>
+                    <TextBlock Text="Scrcpy options" FontWeight="Bold" Margin="0,0,0,8"
+                               Foreground="{DynamicResource PrimaryTextBrush}"/>
+                    <CheckBox x:Name="ChkNoAudio"       Content="No audio"                Margin="0,0,0,4"/>
+                    <CheckBox x:Name="ChkPlaybackAudio" Content="Playback audio"           Margin="0,0,0,4"/>
+                    <CheckBox x:Name="ChkStayAwake"     Content="Stay awake"              Margin="0,0,0,4"/>
+                    <CheckBox x:Name="ChkTurnScreenOff" Content="Turn screen off"         Margin="0,0,0,4"/>
                     <CheckBox x:Name="ChkLockAfterExit" Content="Lock phone after closing" Margin="0,0,0,4"/>
-                    <CheckBox x:Name="ChkTop" Content="Always on top" Margin="0,0,0,4"/>
+                    <CheckBox x:Name="ChkTop"           Content="Always on top"           Margin="0,0,0,4"/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,2,0,4">
                         <CheckBox x:Name="ChkAudioBuffer" Content="Audio buffer" VerticalAlignment="Center"/>
-                        <TextBox x:Name="TxtAudioBuffer" Width="80" Margin="8,0,0,0" Text="50" Visibility="Collapsed"/>
-                        <TextBlock x:Name="TxtAudioBufferUnit" Text="ms" VerticalAlignment="Center" Margin="6,0,0,0" Visibility="Collapsed"/>
+                        <TextBox  x:Name="TxtAudioBuffer" Width="70" Margin="8,0,0,0" Text="50" Visibility="Collapsed"/>
+                        <TextBlock x:Name="TxtAudioBufferUnit" Text="ms" VerticalAlignment="Center" Margin="4,0,0,0" Visibility="Collapsed"/>
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Margin="0,2,0,4">
                         <CheckBox x:Name="ChkVideoBuffer" Content="Video buffer" VerticalAlignment="Center"/>
-                        <TextBox x:Name="TxtVideoBuffer" Width="80" Margin="8,0,0,0" Text="50" Visibility="Collapsed"/>
-                        <TextBlock x:Name="TxtVideoBufferUnit" Text="ms" VerticalAlignment="Center" Margin="6,0,0,0" Visibility="Collapsed"/>
+                        <TextBox  x:Name="TxtVideoBuffer" Width="70" Margin="8,0,0,0" Text="50" Visibility="Collapsed"/>
+                        <TextBlock x:Name="TxtVideoBufferUnit" Text="ms" VerticalAlignment="Center" Margin="4,0,0,0" Visibility="Collapsed"/>
                     </StackPanel>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,2,0,8">
+                    <StackPanel Orientation="Horizontal" Margin="0,2,0,4">
                         <CheckBox x:Name="ChkMaxSize" Content="Limit max size" VerticalAlignment="Center"/>
-                        <TextBox x:Name="TxtMaxSize" Width="80" Margin="8,0,0,0" Text="2440" Visibility="Collapsed"/>
+                        <TextBox  x:Name="TxtMaxSize" Width="70" Margin="8,0,0,0" Text="2440" Visibility="Collapsed"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
 
-            <Border x:Name="AudioLinkPanel" Grid.Row="1" BorderThickness="1" BorderBrush="#DDD" CornerRadius="6" Padding="8" Margin="0,8,0,8" Visibility="Collapsed">
+            <!-- ── Audio link options ── -->
+            <Border x:Name="AudioLinkPanel" BorderThickness="1" BorderBrush="#DDD"
+                    CornerRadius="6" Padding="10" Margin="0,0,0,10" Visibility="Collapsed">
                 <StackPanel>
-                    <TextBlock Text="Audio link options" FontWeight="Bold" Margin="0,0,0,8"/>
+                    <TextBlock Text="Audio link options" FontWeight="Bold" Margin="0,0,0,8"
+                               Foreground="{DynamicResource PrimaryTextBrush}"/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                         <TextBlock Text="Audio codec:" Width="120" VerticalAlignment="Center"/>
                         <ComboBox x:Name="CmbCodec" Width="160">
@@ -70,10 +70,133 @@
                 </StackPanel>
             </Border>
 
-            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
-                <Button Width="90" Margin="0,0,8,0" Content="OK" Click="Ok_Click"/>
-                <Button Width="90" Content="Cancel" Click="Cancel_Click"/>
+            <!-- ── Shortcut Control ── -->
+            <Border x:Name="ShortcutControlPanel" BorderThickness="1" BorderBrush="#DDD"
+                    CornerRadius="6" Padding="10" Margin="0,0,0,10">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <CheckBox x:Name="ChkShortcutControl" Content="Shortcut Control"
+                                  FontWeight="Bold" VerticalAlignment="Center"
+                                  Checked="ChkShortcutControl_Changed"
+                                  Unchecked="ChkShortcutControl_Changed"/>
+                        <Button x:Name="BtnScHelp" Content="?" Width="22" Height="22"
+                                Margin="8,0,0,0" ToolTip="Shortcut Control info"
+                                Click="BtnScHelp_Click" Padding="0"/>
+                    </StackPanel>
+
+                    <StackPanel x:Name="ScDetails" Visibility="Collapsed" Margin="0,4,0,0">
+                        <TextBlock Text="Keeps the app running in the background to handle hotkeys, volume control, and on-the-fly quality changes."
+                                   Foreground="{DynamicResource SubtleTextBrush}" FontSize="11"
+                                   TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+                        <CheckBox x:Name="ChkCustomShortcuts" Content="Use custom shortcuts for this shortcut"
+                                  Margin="0,0,0,8"
+                                  Checked="ChkCustomShortcuts_Changed"
+                                  Unchecked="ChkCustomShortcuts_Changed"/>
+
+                        <!-- Custom shortcut grid, visible only when ChkCustomShortcuts is checked -->
+                        <Grid x:Name="CustomShortcutsGrid" Visibility="Collapsed" Margin="0,4,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Modifier -->
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Modifier:" VerticalAlignment="Center" Margin="0,0,0,6"/>
+                            <ComboBox  x:Name="CmbScModifier" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2"
+                                       Margin="0,0,0,6" SelectionChanged="CmbScModifier_SelectionChanged">
+                                <ComboBoxItem Content="None"         Tag="0"/>
+                                <ComboBoxItem Content="Alt"         Tag="1" IsSelected="True"/>
+                                <ComboBoxItem Content="Ctrl"        Tag="2"/>
+                                <ComboBoxItem Content="Shift"       Tag="4"/>
+                                <ComboBoxItem Content="Ctrl+Alt"    Tag="3"/>
+                                <ComboBoxItem Content="Alt+Shift"   Tag="5"/>
+                                <ComboBoxItem Content="Ctrl+Shift"  Tag="6"/>
+                            </ComboBox>
+
+                            <!-- Audio toggle -->
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Audio toggle:" VerticalAlignment="Center" Margin="0,0,0,4"/>
+                            <TextBox   x:Name="TxtScAudioToggle" Grid.Row="1" Grid.Column="1" IsReadOnly="True" Margin="0,0,6,4" Text="None"/>
+                            <Button    Grid.Row="1" Grid.Column="2" Content="Pick" Margin="0,0,0,4" Padding="8,2"
+                                       Click="BtnPickAudioToggle_Click"/>
+
+                            <!-- Play/Pause -->
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Play / Pause:" VerticalAlignment="Center" Margin="0,0,0,4"/>
+                            <TextBox   x:Name="TxtScPlayPause" Grid.Row="2" Grid.Column="1" IsReadOnly="True" Margin="0,0,6,4" Text="None"/>
+                            <Button    Grid.Row="2" Grid.Column="2" Content="Pick" Margin="0,0,0,4" Padding="8,2"
+                                       Click="BtnPickPlayPause_Click"/>
+
+                            <!-- Next -->
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Next track:" VerticalAlignment="Center" Margin="0,0,0,4"/>
+                            <TextBox   x:Name="TxtScNext" Grid.Row="3" Grid.Column="1" IsReadOnly="True" Margin="0,0,6,4" Text="None"/>
+                            <Button    Grid.Row="3" Grid.Column="2" Content="Pick" Margin="0,0,0,4" Padding="8,2"
+                                       Click="BtnPickNext_Click"/>
+
+                            <!-- Previous -->
+                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Previous track:" VerticalAlignment="Center" Margin="0,0,0,4"/>
+                            <TextBox   x:Name="TxtScPrev" Grid.Row="4" Grid.Column="1" IsReadOnly="True" Margin="0,0,6,4" Text="None"/>
+                            <Button    Grid.Row="4" Grid.Column="2" Content="Pick" Margin="0,0,0,4" Padding="8,2"
+                                       Click="BtnPickPrev_Click"/>
+
+                            <!-- Volume up -->
+                            <TextBlock Grid.Row="5" Grid.Column="0" Text="Volume up:" VerticalAlignment="Center" Margin="0,0,0,4"/>
+                            <TextBox   x:Name="TxtScVolUp" Grid.Row="5" Grid.Column="1" IsReadOnly="True" Margin="0,0,6,4" Text="None"/>
+                            <Button    Grid.Row="5" Grid.Column="2" Content="Pick" Margin="0,0,0,4" Padding="8,2"
+                                       Click="BtnPickVolUp_Click"/>
+
+                            <!-- Volume down -->
+                            <TextBlock Grid.Row="6" Grid.Column="0" Text="Volume down:" VerticalAlignment="Center" Margin="0,0,0,4"/>
+                            <TextBox   x:Name="TxtScVolDown" Grid.Row="6" Grid.Column="1" IsReadOnly="True" Margin="0,0,6,4" Text="None"/>
+                            <Button    Grid.Row="6" Grid.Column="2" Content="Pick" Margin="0,0,0,4" Padding="8,2"
+                                       Click="BtnPickVolDown_Click"/>
+
+                            <!-- Quality -->
+                            <TextBlock Grid.Row="7" Grid.Column="0" Text="Quality picker:" VerticalAlignment="Center" Margin="0,0,0,4"/>
+                            <TextBox   x:Name="TxtScQuality" Grid.Row="7" Grid.Column="1" IsReadOnly="True" Margin="0,0,6,4" Text="None"/>
+                            <Button    Grid.Row="7" Grid.Column="2" Content="Pick" Margin="0,0,0,4" Padding="8,2"
+                                       Click="BtnPickQuality_Click"/>
+                        </Grid>
+
+                        <TextBlock x:Name="TxtGlobalShortcutsNote"
+                                   Text="Global shortcuts from Settings will be used."
+                                   Foreground="{DynamicResource SubtleTextBrush}" FontSize="11"
+                                   Margin="0,4,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- ── Connection Aware Mode ── -->
+            <Border BorderThickness="1" BorderBrush="#DDD" CornerRadius="6" Padding="10" Margin="0,0,0,14">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <CheckBox x:Name="ChkConnectionAware" Content="Connection Aware Mode"
+                                  FontWeight="Bold" VerticalAlignment="Center"/>
+                        <Button x:Name="BtnCaHelp" Content="?" Width="22" Height="22"
+                                Margin="8,0,0,0" Click="BtnCaHelp_Click" Padding="0"/>
+                    </StackPanel>
+                    <TextBlock Text="Automatically switches between USB and Wireless Debugging. Requires the app to stay running in the background."
+                               Foreground="{DynamicResource SubtleTextBrush}" FontSize="11"
+                               TextWrapping="Wrap" Margin="18,6,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <!-- ── Buttons ── -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Width="90" Margin="0,0,8,0" Content="OK"     Click="Ok_Click"/>
+                <Button Width="90"                  Content="Cancel" Click="Cancel_Click"/>
             </StackPanel>
-        </Grid>
+
+        </StackPanel>
     </ScrollViewer>
 </Window>

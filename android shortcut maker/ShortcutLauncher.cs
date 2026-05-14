@@ -1,213 +1,240 @@
 using System.Diagnostics;
 using System.IO;
-using System.Text.RegularExpressions;
 using System.Windows;
 
 namespace android_shortcut_maker;
 
 internal static class ShortcutLauncher
 {
+    public static bool ShouldStayResident { get; private set; }
+
     public static async Task<bool> TryLaunchFromShortcutAsync(string[] args)
     {
-        if (args == null || args.Length == 0)
-        {
-            return false;
-        }
+        Debugger.Show($"[Launch] Raw args ({args?.Length ?? 0}): {string.Join(" | ", args ?? [])}");
+
+        if (args == null || args.Length == 0) return false;
 
         var config = ShortcutMakerConfigStore.Load();
-        var adbPath = config.Paths.Adb;
-        var scrcpyPath = config.Paths.Scrcpy;
+        AdbHelper.AdbPath = config.Paths.Adb;
 
-        if (!File.Exists(adbPath))
+        if (!File.Exists(config.Paths.Adb))
         {
-            MessageBox.Show("adb.exe not found. Configure paths in Android Shortcut Maker settings.", "android shortcut maker", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show("adb.exe not found. Configure paths in settings.", "android shortcut maker", MessageBoxButton.OK, MessageBoxImage.Error);
             return true;
         }
 
-        if (!File.Exists(scrcpyPath))
+        if (!File.Exists(config.Paths.Scrcpy))
         {
-            MessageBox.Show("scrcpy.exe not found. Configure paths in Android Shortcut Maker settings.", "android shortcut maker", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show("scrcpy.exe not found. Configure paths in settings.", "android shortcut maker", MessageBoxButton.OK, MessageBoxImage.Error);
             return true;
         }
 
         var targetName = ExtractValue(args, "--target-name") ?? string.Empty;
         var targetUsb = ExtractValue(args, "--target-usb") ?? string.Empty;
-        var targetWifi = ExtractValue(args, "--target-wifi") ?? string.Empty;
+        var targetMdns = ExtractValue(args, "--target-mdns") ?? string.Empty;
+        var targetLastIp = ExtractValue(args, "--target-last-ip") ?? string.Empty;
 
-        if (string.IsNullOrWhiteSpace(targetUsb) && string.IsNullOrWhiteSpace(targetWifi) && !string.IsNullOrWhiteSpace(targetName))
+        Debugger.Show($"[Launch] Extracted: name='{targetName}' usb='{targetUsb}' mdns='{targetMdns}' lastip='{targetLastIp}'");
+
+        if (string.IsNullOrWhiteSpace(targetUsb) && string.IsNullOrWhiteSpace(targetMdns) && !string.IsNullOrWhiteSpace(targetName))
         {
-            var saved = config.SavedDevices.FirstOrDefault(x => string.Equals(x.Name, targetName, StringComparison.OrdinalIgnoreCase));
+            var saved = config.SavedDevices.FirstOrDefault(x =>
+                string.Equals(x.Name, targetName, StringComparison.OrdinalIgnoreCase));
             if (saved != null)
             {
                 targetUsb = saved.UsbSerial;
-                targetWifi = saved.WifiIpPort;
+                targetMdns = saved.WifiMdnsServiceName;
+                targetLastIp = saved.WifiLastKnownIpPort;
             }
         }
 
         if (string.IsNullOrWhiteSpace(targetUsb)) targetUsb = config.SelectedDeviceUSB;
-        if (string.IsNullOrWhiteSpace(targetWifi)) targetWifi = config.SelectedDeviceWiFi;
+        if (string.IsNullOrWhiteSpace(targetMdns)) targetMdns = config.SelectedDeviceWifiMdnsName;
+        if (string.IsNullOrWhiteSpace(targetLastIp)) targetLastIp = config.SelectedDeviceWifiLastKnownIpPort;
 
-        var resolved = await ResolveDeviceAsync(adbPath, targetUsb, targetWifi, allowPortRecoveryPrompt: true);
+        var resolved = await ResolveDeviceAsync(targetUsb, targetMdns, targetLastIp);
         if (string.IsNullOrWhiteSpace(resolved))
         {
-            MessageBox.Show("No configured device found. Connect via USB or Wi-Fi.", "android shortcut maker", MessageBoxButton.OK, MessageBoxImage.Warning);
+            Debugger.Show("[Launch] No device found.");
+            MessageBox.Show(
+                "No device found. Connect via USB or enable Wireless Debugging on your phone.",
+                "android shortcut maker", MessageBoxButton.OK, MessageBoxImage.Warning);
             return true;
         }
 
+        Debugger.Show($"[Launch] Resolved device: '{resolved}'");
+
+        if (resolved.Contains(':') && !string.IsNullOrWhiteSpace(targetMdns))
+        {
+            config.SelectedDeviceWifiLastKnownIpPort = resolved;
+            var saved = config.SavedDevices.FirstOrDefault(x =>
+                string.Equals(x.WifiMdnsServiceName, targetMdns, StringComparison.OrdinalIgnoreCase));
+            if (saved != null) saved.WifiLastKnownIpPort = resolved;
+            ShortcutMakerConfigStore.Save(config);
+        }
+
+        var scEnabled = args.Any(a => a.Equals("--sc-enabled", StringComparison.OrdinalIgnoreCase));
+        var caEnabled = args.Any(a => a.Equals("--ca-enabled", StringComparison.OrdinalIgnoreCase));
+
         var sanitized = SanitizeArgs(args);
+
+        if (scEnabled)
+        {
+            // In SC mode the video scrcpy never handles audio.
+            // SharedAudioSession launches its own separate audio-only process.
+            sanitized.RemoveAll(a =>
+                a.Equals("--no-audio", StringComparison.OrdinalIgnoreCase)
+                || a.StartsWith("--audio-source", StringComparison.OrdinalIgnoreCase)
+                || a.StartsWith("--audio-codec", StringComparison.OrdinalIgnoreCase)
+                || a.StartsWith("--audio-bit-rate", StringComparison.OrdinalIgnoreCase)
+                || a.StartsWith("--audio-buffer", StringComparison.OrdinalIgnoreCase)
+                || a.StartsWith("--audio-codec-options", StringComparison.OrdinalIgnoreCase));
+            sanitized.Add("--no-audio");
+        }
+
+        Debugger.Show($"[Launch] Sanitized args: {string.Join(" | ", sanitized)}");
+
         var psi = new ProcessStartInfo
         {
-            FileName = scrcpyPath,
+            FileName = config.Paths.Scrcpy,
             UseShellExecute = false,
-            CreateNoWindow = true
+            CreateNoWindow = false
         };
-
         psi.ArgumentList.Add("-s");
         psi.ArgumentList.Add(resolved);
         foreach (var arg in sanitized)
-        {
             psi.ArgumentList.Add(arg);
+
+        var scrcpyProcess = Process.Start(psi);
+        Debugger.Show($"[Launch] scrcpy started, pid={scrcpyProcess?.Id}");
+
+        ShouldStayResident = scEnabled || caEnabled;
+
+        if (ShouldStayResident && scrcpyProcess != null)
+        {
+            var scId = ExtractValue(args, "--sc-id") ?? Guid.NewGuid().ToString("N")[..8];
+            Debugger.Show($"[Launch] Non-simple mode. sc-id={scId} sc={scEnabled} ca={caEnabled}");
+
+            ShortcutHost.Start(new ShortcutHostConfig
+            {
+                ScrcpyProcess = scrcpyProcess,
+                ScId = scId,
+                DeviceSerial = resolved,
+                UsbSerial = targetUsb,
+                MdnsServiceName = targetMdns,
+                LastKnownIpPort = targetLastIp,
+                ScrcpyPath = config.Paths.Scrcpy,
+                AdbPath = config.Paths.Adb,
+                OriginalArgs = args,
+                ShortcutControlEnabled = scEnabled,
+                ConnectionAwareEnabled = caEnabled,
+                Modifier = ParseInt(ExtractValue(args, "--sc-mod"), 0x0001),
+                VkAudioToggle = ParseInt(ExtractValue(args, "--sc-audio-toggle"), 0),
+                VkPlayPause = ParseInt(ExtractValue(args, "--sc-play-pause"), 0),
+                VkNext = ParseInt(ExtractValue(args, "--sc-next"), 0),
+                VkPrev = ParseInt(ExtractValue(args, "--sc-prev"), 0),
+                VkVolUp = ParseInt(ExtractValue(args, "--sc-vol-up"), 0),
+                VkVolDown = ParseInt(ExtractValue(args, "--sc-vol-down"), 0),
+                VkQuality = ParseInt(ExtractValue(args, "--sc-quality"), 0),
+            });
         }
 
-        Process.Start(psi);
         return true;
     }
 
-    public static async Task<string?> ResolveDeviceAsync(string adbPath, string usbSerial, string wifiIpPort, bool allowPortRecoveryPrompt)
+    public static async Task<string> ResolveDeviceAsync(
+        string usbSerial,
+        string wifiMdnsServiceName,
+        string wifiLastKnownIpPort)
     {
-        var devices = await AdbRunner.RunCaptureAsync(adbPath, "devices");
-        var lines = SplitDeviceLines(devices);
+        var deviceList = await AdbHelper.RunAdbCaptureAsync("devices").ConfigureAwait(false);
+        Debugger.Show($"[Resolve] adb devices: {deviceList.Replace("\n", " / ").Replace("\r", "")}");
+        var lines = ParseDeviceLines(deviceList);
 
         if (!string.IsNullOrWhiteSpace(usbSerial) && IsConnected(lines, usbSerial))
         {
+            Debugger.Show($"[Resolve] USB connected: {usbSerial}");
             return usbSerial;
         }
 
-        if (!string.IsNullOrWhiteSpace(wifiIpPort) && !wifiIpPort.Equals("None", StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(wifiMdnsServiceName))
         {
-            if (!IsConnected(lines, wifiIpPort))
-            {
-                await AdbRunner.RunCaptureAsync(adbPath, $"connect {wifiIpPort}");
-                devices = await AdbRunner.RunCaptureAsync(adbPath, "devices");
-                lines = SplitDeviceLines(devices);
-            }
-
-            if (IsConnected(lines, wifiIpPort))
-            {
-                return wifiIpPort;
-            }
-
-            if (allowPortRecoveryPrompt && !string.IsNullOrWhiteSpace(usbSerial))
-            {
-                var res = MessageBox.Show(
-                    "Wi-Fi connection failed. Reconnect the device over USB to set up the port again?",
-                    "android shortcut maker",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
-
-                if (res == MessageBoxResult.Yes)
-                {
-                    if (!IsConnected(lines, usbSerial))
-                    {
-                        MessageBox.Show("USB device is not connected yet. Connect USB and try the shortcut again.", "android shortcut maker", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        return null;
-                    }
-
-                    var recoveredWifi = await TryRecoverWifiPortWithUsbAsync(adbPath, usbSerial, wifiIpPort);
-                    if (!string.IsNullOrWhiteSpace(recoveredWifi))
-                    {
-                        MessageBox.Show("Port set up again.", "android shortcut maker", MessageBoxButton.OK, MessageBoxImage.Information);
-                        return recoveredWifi;
-                    }
-                }
-            }
+            Debugger.Show($"[Resolve] Trying mDNS '{wifiMdnsServiceName}'.");
+            var ipPort = await WirelessDebuggingHelper.ReconnectViaMdnsAsync(wifiMdnsServiceName).ConfigureAwait(false);
+            Debugger.Show($"[Resolve] mDNS result: '{ipPort}'");
+            if (!string.IsNullOrWhiteSpace(ipPort)) return ipPort;
         }
 
-        return null;
-    }
-
-    public static async Task<string?> TryRecoverWifiPortWithUsbAsync(string adbPath, string usbSerial, string fallbackWifi)
-    {
-        await AdbRunner.RunAsync(adbPath, $"-s {usbSerial} tcpip 5555");
-
-        var ipOutput = await AdbRunner.RunCaptureAsync(adbPath, $"-s {usbSerial} shell ip -f inet addr show wlan0");
-        var match = Regex.Match(ipOutput, @"inet\s+(?<ip>\d+\.\d+\.\d+\.\d+)");
-
-        var wifi = !match.Success
-            ? fallbackWifi
-            : string.Concat(match.Groups["ip"].Value, ":5555");
-
-        if (string.IsNullOrWhiteSpace(wifi))
+        if (!string.IsNullOrWhiteSpace(wifiLastKnownIpPort))
         {
-            return null;
+            Debugger.Show($"[Resolve] Trying last-known '{wifiLastKnownIpPort}'.");
+            var ok = await WirelessDebuggingHelper.TryConnectLastKnownAsync(wifiLastKnownIpPort).ConfigureAwait(false);
+            Debugger.Show($"[Resolve] Last-known result: {ok}");
+            if (ok) return wifiLastKnownIpPort;
         }
 
-        await AdbRunner.RunCaptureAsync(adbPath, $"connect {wifi}");
-        var devices = await AdbRunner.RunCaptureAsync(adbPath, "devices");
-        var lines = SplitDeviceLines(devices);
-        return IsConnected(lines, wifi) ? wifi : null;
+        Debugger.Show("[Resolve] No device found.");
+        return string.Empty;
     }
 
-    private static string? ExtractValue(string[] args, string key)
-    {
-        for (var i = 0; i < args.Length; i++)
-        {
-            if (string.Equals(args[i], key, StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
-            {
-                return args[i + 1];
-            }
+    // ── Helpers ──────────────────────────────────────────────────────────────
 
-            if (args[i].StartsWith(key + "=", StringComparison.OrdinalIgnoreCase))
-            {
-                return args[i][(key.Length + 1)..].Trim('"');
-            }
-        }
-
-        return null;
-    }
-
-    private static string[] SplitDeviceLines(string output) => output
+    private static string[] ParseDeviceLines(string output) => output
         .Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries)
         .Where(x => !x.StartsWith("List of devices", StringComparison.OrdinalIgnoreCase))
         .ToArray();
 
     private static bool IsConnected(IEnumerable<string> lines, string serial) =>
-        lines.Any(x => x.StartsWith(serial, StringComparison.OrdinalIgnoreCase) && x.TrimEnd().EndsWith("device", StringComparison.OrdinalIgnoreCase));
+        lines.Any(x =>
+            x.StartsWith(serial, StringComparison.OrdinalIgnoreCase)
+            && x.TrimEnd().EndsWith("device", StringComparison.OrdinalIgnoreCase));
+
+    public static string? ExtractValue(string[] args, string key)
+    {
+        for (var i = 0; i < args.Length; i++)
+        {
+            if (string.Equals(args[i], key, StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+                return args[i + 1];
+            if (args[i].StartsWith(key + "=", StringComparison.OrdinalIgnoreCase))
+                return args[i][(key.Length + 1)..].Trim('"');
+        }
+        return null;
+    }
+
+    private static int ParseInt(string? value, int fallback)
+        => int.TryParse(value, out var v) ? v : fallback;
+
+    public static List<string> SanitizeArgsPublic(string[] args) => SanitizeArgs(args);
 
     private static List<string> SanitizeArgs(string[] args)
     {
-        var removedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        var removedPrefixes = new[]
         {
-            "--target-name",
-            "--target-usb",
-            "--target-wifi"
+            "--target-name", "--target-usb", "--target-mdns", "--target-last-ip", "--target-wifi",
+            "--sc-id", "--sc-enabled", "--sc-mod",
+            "--sc-audio-toggle", "--sc-play-pause", "--sc-next", "--sc-prev",
+            "--sc-vol-up", "--sc-vol-down", "--sc-quality",
+            "--ca-enabled",
         };
 
         var clean = new List<string>();
         for (var i = 0; i < args.Length; i++)
         {
             var arg = args[i];
-            if (arg.Equals("-s", StringComparison.OrdinalIgnoreCase) || arg.Equals("--serial", StringComparison.OrdinalIgnoreCase))
+
+            if (arg.Equals("-s", StringComparison.OrdinalIgnoreCase)
+                || arg.Equals("--serial", StringComparison.OrdinalIgnoreCase))
             {
                 i++;
                 continue;
             }
 
-            if (arg.StartsWith("--serial=", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
+            if (arg.StartsWith("--serial=", StringComparison.OrdinalIgnoreCase)) continue;
 
-            if (removedKeys.Contains(arg))
-            {
-                i++;
+            if (removedPrefixes.Any(p =>
+                    arg.Equals(p, StringComparison.OrdinalIgnoreCase)
+                    || arg.StartsWith(p + "=", StringComparison.OrdinalIgnoreCase)))
                 continue;
-            }
-
-            if (removedKeys.Any(k => arg.StartsWith(k + "=", StringComparison.OrdinalIgnoreCase)))
-            {
-                continue;
-            }
 
             clean.Add(arg);
         }
