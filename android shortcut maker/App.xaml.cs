@@ -5,7 +5,7 @@ namespace android_shortcut_maker;
 
 public partial class App : Application
 {
-    public const string CurrentVersion = "v2.0.0.0";
+    public const string CurrentVersion = "v3.0.0.0";
 
     protected override async void OnStartup(StartupEventArgs e)
     {

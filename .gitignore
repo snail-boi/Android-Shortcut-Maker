@@ -367,3 +367,20 @@ FodyWeavers.xsd
 
 
 resources/
+/android shortcut maker/Resources/adb.exe
+/android shortcut maker/Resources/AdbWinApi.dll
+/android shortcut maker/Resources/AdbWinUsbApi.dll
+/android shortcut maker/Resources/avcodec-62.dll
+/android shortcut maker/Resources/avformat-62.dll
+/android shortcut maker/Resources/avutil-60.dll
+/android shortcut maker/Resources/disconnected.png
+/android shortcut maker/Resources/ffmpeg.exe
+/android shortcut maker/Resources/libusb-1.0.dll
+/android shortcut maker/Resources/Musiclogo.png
+/android shortcut maker/Resources/open_a_terminal_here.bat
+/android shortcut maker/Resources/scrcpy-noconsole.vbs
+/android shortcut maker/Resources/scrcpy-server
+/android shortcut maker/Resources/scrcpy.exe
+/android shortcut maker/Resources/scrcpy.png
+/android shortcut maker/Resources/SDL3.dll
+/android shortcut maker/Resources/swresample-6.dll

@@ -1,33 +1,55 @@
 <Project Sdk="Microsoft.NET.Sdk">
-	<PropertyGroup>
-		<OutputType>WinExe</OutputType>
-		<TargetFramework>net8.0-windows</TargetFramework>
-		<Nullable>enable</Nullable>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<UseWPF>true</UseWPF>
-		<ApplicationIcon>logo s.ico</ApplicationIcon>
-		<AssemblyName>android shortcut maker</AssemblyName>
-	</PropertyGroup>
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>logo s.ico</ApplicationIcon>
+    <AssemblyName>android shortcut maker</AssemblyName>
+  </PropertyGroup>
 
-	<ItemGroup>
-		<Content Include="logo s.ico" />
-	</ItemGroup>
+  <ItemGroup>
+    <Content Include="logo s.ico" />
+  </ItemGroup>
 
-	<Target Name="CreatePortablePackage" AfterTargets="Build">
-		<PropertyGroup>
-			<PortableStageDir>$(TargetDir)portable-package\</PortableStageDir>
-			<PortableZipPath>$(TargetDir)Android.Shortcut.Maker.Portable.zip</PortableZipPath>
-		</PropertyGroup>
+  <ItemGroup>
+    <None Update="Resources\adb.exe">               <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory> </None>
+    <None Update="Resources\AdbWinApi.dll">          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory> </None>
+    <None Update="Resources\AdbWinUsbApi.dll">       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory> </None>
+    <None Update="Resources\avcodec-62.dll">         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory> </None>
+    <None Update="Resources\avformat-62.dll">        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory> </None>
+    <None Update="Resources\avutil-60.dll">          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory> </None>
+    <None Update="Resources\disconnected.png">       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory> </None>
+    <None Update="Resources\ffmpeg.exe">             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory> </None>
+    <None Update="Resources\libusb-1.0.dll">         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory> </None>
+    <None Update="Resources\Musiclogo.png">          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory> </None>
+    <None Update="Resources\open_a_terminal_here.bat"> <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory> </None>
+    <None Update="Resources\scrcpy.exe">             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory> </None>
+    <None Update="Resources\scrcpy.png">             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory> </None>
+    <None Update="Resources\scrcpy-noconsole.vbs">   <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory> </None>
+    <None Update="Resources\scrcpy-server">          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory> </None>
+    <None Update="Resources\SDL3.dll">               <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory> </None>
+    <None Update="Resources\swresample-6.dll">       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory> </None>
+  </ItemGroup>
 
-		<ItemGroup>
-			<PortableRootFiles Include="$(TargetDir)$(AssemblyName).deps.json;$(TargetDir)$(AssemblyName).dll;$(TargetDir)$(AssemblyName).exe;$(TargetDir)$(AssemblyName).pdb;$(TargetDir)$(AssemblyName).runtimeconfig.json" />
-		</ItemGroup>
+  <Target Name="CreatePortablePackage" AfterTargets="Build">
+    <PropertyGroup>
+      <PortableStageDir>$(TargetDir)portable-package\</PortableStageDir>
+      <PortableZipPath>$(TargetDir)Android.Shortcut.Maker.Portable.zip</PortableZipPath>
+    </PropertyGroup>
 
-		<RemoveDir Directories="$(PortableStageDir)" Condition="Exists('$(PortableStageDir)')" />
-		<MakeDir Directories="$(PortableStageDir)" />
-		<Copy SourceFiles="@(PortableRootFiles)" DestinationFolder="$(PortableStageDir)" SkipUnchangedFiles="false" />
-		<WriteLinesToFile File="$(PortableStageDir)portable.mode" Lines="portable" Overwrite="true" />
-		<Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;if (Test-Path '$(PortableZipPath)') { Remove-Item '$(PortableZipPath)' -Force }; Compress-Archive -Path '$(PortableStageDir)*' -DestinationPath '$(PortableZipPath)' -Force&quot;" />
-		<RemoveDir Directories="$(PortableStageDir)" />
-	</Target>
+    <ItemGroup>
+      <PortableRootFiles Include="$(TargetDir)$(AssemblyName).deps.json;$(TargetDir)$(AssemblyName).dll;$(TargetDir)$(AssemblyName).exe;$(TargetDir)$(AssemblyName).pdb;$(TargetDir)$(AssemblyName).runtimeconfig.json" />
+      <PortableResourceFiles Include="$(TargetDir)Resources\**\*" />
+    </ItemGroup>
+
+    <RemoveDir Directories="$(PortableStageDir)" Condition="Exists('$(PortableStageDir)')" />
+    <MakeDir Directories="$(PortableStageDir)" />
+    <Copy SourceFiles="@(PortableRootFiles)" DestinationFolder="$(PortableStageDir)" SkipUnchangedFiles="false" />
+    <Copy SourceFiles="@(PortableResourceFiles)" DestinationFiles="@(PortableResourceFiles->'$(PortableStageDir)Resources\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <WriteLinesToFile File="$(PortableStageDir)portable.mode" Lines="portable" Overwrite="true" />
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;if (Test-Path '$(PortableZipPath)') { Remove-Item '$(PortableZipPath)' -Force }; Compress-Archive -Path '$(PortableStageDir)*' -DestinationPath '$(PortableZipPath)' -Force&quot;" />
+    <RemoveDir Directories="$(PortableStageDir)" />
+  </Target>
 </Project>
